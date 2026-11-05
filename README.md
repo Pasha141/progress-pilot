@@ -1,133 +1,517 @@
 # ATS Resume Builder by Junaid
 
-Full-stack ATS-friendly resume builder, ATS score analyzer, AI Resume Revive parser, and tailored cover letter generator built with React, TypeScript, Tailwind CSS, and Express.
+**Build Smarter Resumes. Optimize for ATS. Move Your Career Forward.**
 
-## Run Locally
+A full-stack, AI-powered ATS Resume Builder designed to help job seekers create professional resumes, analyze ATS compatibility, improve resume content, and generate tailored cover letters.
 
-**Prerequisites:** Node.js 20+; Python 3.10+ for the optional FastAPI ATS service.
+Built with React, TypeScript, Tailwind CSS, Express, MySQL, and optional FastAPI integration.
 
-1. Install dependencies:
-   ```bash
-   npm install
-   ```
-2. Copy `.env.example` to `.env` and fill in your values:
-   ```cmd
-   if not exist .env copy .env.example .env
-   ```
-   - Replace the `JWT_SECRET_KEY` placeholder with a random 32-byte value generated via `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`. The server refuses to start without a strong key in every environment.
-   - Set `GEMINI_API_KEY` for AI features (local deterministic ATS parser fallback works automatically if omitted in dev).
-   - Set `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_USER`, `MYSQL_PASSWORD`, and `MYSQL_DATABASE` for the existing MySQL database. The defaults target local `resume_ats`.
-   - Set `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, and `MAIL_FROM` for verification and password-recovery emails. Codes are never written to server logs; SMTP delivery failures log only a sanitized transport code. Email syntax is checked before sending, and mailbox ownership is verified by OTP rather than an MX/DNS lookup. Forgot Password keeps a generic response to protect account privacy.
-   - Existing sessions created before the password-version claim was added must sign in again after deployment. Existing passwords continue to work and are upgraded securely after successful login.
-3. Start the full-stack development server on `http://localhost:3000`:
-   ```bash
-   npm run dev
-   ```
+[Features](#features) · [Technology Stack](#technology-stack) · [Installation](#installation-and-setup) · [Configuration](#environment-configuration) · [Run Locally](#run-the-application) · [Testing](#testing) · [Deployment](#deployment)
 
-## Deploy on Render
+---
 
-1. Push the repository to GitHub (ensure `.env` and `data_storage/` are ignored via `.gitignore`).
-2. Create a new **Web Service** on [Render](https://render.com) connected to your GitHub repo:
-   - **Runtime:** `Node`
-   - **Build Command:** `npm install && npm run build`
-   - **Start Command:** `npm start`
-   - **Health Check Path:** `/api/health`
-3. Add the following **Environment Variables** in the Render Dashboard:
-   - `NODE_ENV` = `production`
-   - `JWT_SECRET_KEY` = *(strong 32-byte random hex string — required; changing it invalidates existing sessions)*
-   - `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_USER`, `MYSQL_PASSWORD`, and `MYSQL_DATABASE` = *(connection settings for the provisioned MySQL database)*
-   - `GEMINI_API_KEY` = *(your Google Gemini API key)*
-   - `SMTP_HOST` = *(e.g. `smtp.gmail.com` or Brevo/Resend SMTP host)*
-   - `SMTP_PORT` = `587`
-   - `SMTP_USER` = *(your SMTP username/email)*
-   - `SMTP_PASS` = *(your SMTP app password / API key)*
-   - `MAIL_FROM` = `Resume Builder by Junaid <your_verified_sender@domain.com>`
-   - `VITE_API_BASE_URL` = *(leave empty)*
-   - To enable the FastAPI ATS proxy in deployment, deploy the separate ATS service and set `FASTAPI_ATS_URL` to its HTTPS URL plus the shared `FASTAPI_ATS_TOKEN`. Do not use a loopback URL in a cloud deployment.
+## Overview
 
-## Request Flow and Backend Responsibilities
+ATS Resume Builder by Junaid is a full-stack web application that helps users create, improve, and optimize resumes for Applicant Tracking Systems (ATS).
 
-The React/Vite frontend sends `/api/...` requests to the same origin. Express remains the primary website backend and continues to own registration, login, OTP, password recovery, sessions, and resume CRUD. The browser does not call FastAPI or receive its service credential.
+The application combines resume editing, ATS analysis, AI-powered suggestions, document parsing, and cover letter generation in one platform.
 
-Gemini-backed API routes require an authenticated Express session and are limited to 10 AI requests per account per minute. `GEMINI_API_KEY` remains a server-only setting; the browser communicates with Express endpoints rather than the Gemini API directly.
+The primary backend is Express. MySQL stores application data, while Google Gemini provides AI-powered functionality. An optional, independently deployed FastAPI service handles selected ATS processing tasks.
 
-For ATS job matching and uploaded-resume analysis, the browser calls the existing-origin Express API. Express validates the authenticated request; for the upload route it extracts document text and forwards only bounded text and the optional job description. Express calls the private FastAPI ATS service with `FASTAPI_ATS_TOKEN`, validates the response, and returns it to the browser. The Express JWT is not sent upstream. FastAPI ATS processing is stateless and does not read or write either backend's user/resume database. If FastAPI is not configured, the existing Express implementations of `/api/ai/match-job` and `/api/ats/analyze` remain available.
+## Features
 
-The ATS-only FastAPI entrypoint is `app.ats_main:app`; it is separate from the existing database-backed FastAPI CRUD entrypoint `app.main:app`. The ATS service needs only the shared `FASTAPI_ATS_TOKEN` and does not require `DATABASE_URL`. Existing FastAPI auth/resume CRUD still uses its own `users` and `resumes` tables and remains separate from Express `app_users` and `app_resumes`. The database-backed FastAPI app still requires an explicit `DATABASE_URL` and its existing resume model needs columns missing from the inspected `resume_ats.resumes` table. At the time of this check, `backend/.env` and a runtime `DATABASE_URL` were absent, so the intended database target for that CRUD app could not be confirmed; do not start `app.main:app` on the assumption that it should use the Express database.
+### Resume Builder
+- Create and edit professional resumes.
+- Organize information into structured resume sections.
+- Live resume editing and preview.
+- Multiple professional and ATS-friendly templates.
+- Export resumes to PDF and DOCX.
+
+### ATS Resume Analyzer
+- Analyze resume content and ATS compatibility.
+- Identify missing or relevant job keywords.
+- Review keyword density and action verbs.
+- Highlight weak resume phrases.
+- Provide improvement recommendations.
+
+### AI Resume Revive
+- Extract and organize resume information.
+- Improve resume content using AI assistance.
+- Generate structured resume drafts from provided information.
+- Review and edit suggestions before saving.
+
+### AI Cover Letter Generator
+- Generate job-specific cover letters.
+- Tailor content using resume and job-description information.
 
 ### Voice-to-Resume
+- Browser-based speech recognition.
+- Locale hints for English, Hindi, Urdu, and Kannada.
+- Review extracted content before creating a resume draft.
+- Manual transcript editing when speech recognition is unavailable.
 
-The authenticated resume editor offers optional browser-native speech recognition with locale hints for English (India, `en-IN`), English (United States, `en-US`), Hindi (`hi-IN`), Urdu (`ur-PK`), and Kannada (`kn-IN`). These are best-effort locale hints, not a guarantee that a given browser, operating system, or speech service supports accurate recognition. When recognition is unavailable, the transcript can be entered manually.
+### Authentication and Security
+- User registration and login.
+- Email OTP verification and password recovery.
+- Secure password hashing.
+- JWT-based authentication.
+- User-specific resume access controls.
+- Rate limiting for selected AI and authentication endpoints.
 
-Speech is handled by the browser/operating-system provider and may be sent to that provider; the app does not upload or persist audio. After the user reviews and explicitly submits the transcript, the authenticated Express endpoint sends it to Google Gemini using the server-configured key; Google's applicable data-processing policies apply. The voice endpoint does not store transcripts or alter saved resumes. Extraction is restricted to source phrases found in the transcript, and the result opens as a separate unsaved draft. The user can edit all fields in the existing resume form and must explicitly save the draft. Replacing the currently displayed editor content requires an acknowledgement; an existing saved resume remains unchanged.
+---
 
-No additional environment variable or database change is required. The feature uses the existing server-only `GEMINI_API_KEY`; extraction is unavailable until it is configured. The existing per-account Gemini rate limit also applies to voice extraction.
+## Technology Stack
 
-In the Resume Revive chatbot, the microphone sends browser-recognized text into the normal chat input; it never auto-sends. The user can choose English, Hindi/Hinglish, Urdu, or Kannada locale hints, review/edit the result, stop or cancel recording, and then use the existing Send action. Recognition support and mixed-language accuracy depend on the browser and its speech service. Audio may be processed by that external provider; this app does not upload or persist recordings. After enough chat details have been shared, **Organize chat details into a resume draft** uses the same authenticated, source-checked extraction endpoint as Voice-to-Resume. A separate acknowledgement is required to load the result as a new unsaved draft; the open saved resume is preserved.
+| Layer | Technologies |
+|---|---|
+| Frontend | React, TypeScript, Vite |
+| Styling | Tailwind CSS |
+| Backend | Node.js, Express |
+| Database | MySQL 8 |
+| AI Integration | Google Gemini API |
+| Optional ATS Service | Python, FastAPI |
+| Authentication | JWT, secure password hashing |
+| Testing | Node.js test runner, Python pytest |
+| Version Control | Git, GitHub |
 
-### Authentication rate limits behind proxies
+---
 
-The authentication rate limiter keys requests by the TCP peer address and deliberately ignores `X-Forwarded-For`. No Express `trust proxy` setting or deployment proxy-hop configuration is present in this repository, so accepting caller-supplied forwarding headers would let clients evade the limits. In local development this uses the direct client connection. A deployed Render Web Service is described above, but its active proxy topology and trusted-address configuration have not been independently verified; when the app is behind a proxy, requests may therefore share the proxy's peer-address bucket. Before enabling per-client proxy IP handling, verify the provider's current proxy boundary and configure Express to trust only that exact boundary. Do not set `trust proxy` to `true` or parse forwarded headers directly.
+## Architecture
 
-### Configure the private ATS service
+```text
+                 USER / BROWSER
+                       |
+                       v
+              React + TypeScript
+                 Vite Frontend
+                       |
+                       v
+                 Express API
+                       |
+          +------------+------------+
+          |            |            |
+          v            v            v
+        MySQL       Gemini API   FastAPI ATS
+       Database      (AI)        (Optional)
+                                    |
+                                    v
+                              ATS Processing
+```
 
-Add these server-side environment variable names to the root `.env`:
+**Backend responsibilities**
 
-- `FASTAPI_ATS_URL` — for local development, `http://127.0.0.1:8001`; use an HTTPS URL for a non-loopback service.
-- `FASTAPI_ATS_TOKEN` — generate a cryptographically random value of at least 32 characters and configure the same value for both processes. Never put it in `VITE_*` variables or frontend code.
+- Express manages authentication, OTP, password recovery, sessions, resume CRUD, and API requests.
+- MySQL stores application data.
+- Gemini handles supported AI-powered features through server-side API routes.
+- FastAPI is an optional private ATS service for selected resume-analysis operations.
 
-Generate a token locally with Node.js (the command prints the random value only in your terminal):
+The browser communicates with Express. Private API credentials must remain on the server.
+
+---
+
+## Installation and Setup
+
+Follow these instructions to run the project on your local computer.
+
+### 1. Prerequisites
+
+Install the following software before starting.
+
+| Software | Requirement | Official download |
+|---|---|---|
+| Node.js | Version 20 or later | https://nodejs.org/ |
+| npm | Included with Node.js | Included with Node.js |
+| Git | Latest stable version | https://git-scm.com/downloads |
+| MySQL Community Server | MySQL 8 | https://dev.mysql.com/downloads/mysql/ |
+| Python | Version 3.10+ (optional ATS service) | https://www.python.org/downloads/ |
+| VS Code | Recommended editor | https://code.visualstudio.com/ |
+
+**Verify installation**
+
+Open Command Prompt or a terminal:
+
+```cmd
+node --version
+npm --version
+git --version
+mysql --version
+python --version
+```
+
+If a command is not recognized, verify that the corresponding software is installed and added to PATH.
+
+### 2. Clone the GitHub Repository
+
+Open Command Prompt and run:
+
+```cmd
+git clone https://github.com/Pasha141/progress-pilot.git
+```
+
+Enter the project directory:
+
+```cmd
+cd progress-pilot
+```
+
+### 3. Install Node.js Dependencies
+
+From the project root:
+
+```cmd
+npm install
+```
+
+Wait until installation completes.
+
+### 4. Configure Environment Variables
+
+Create your local environment file:
+
+```cmd
+if not exist .env copy .env.example .env
+```
+
+Open `.env` in a text editor and configure the required values.
+
+See [Environment Configuration](#environment-configuration) below.
+
+**Important:** Never upload `.env` to GitHub. Use `.env.example` only for placeholder configuration.
+
+### 5. Configure MySQL
+
+Install and start MySQL Server 8.
+
+Create the application database using MySQL:
+
+```sql
+CREATE DATABASE resume_ats;
+```
+
+Configure the database connection details in the root `.env` file.
+
+Use the database schema and setup scripts supplied with the project. Do not assume that creating an empty database automatically creates all required tables.
+
+### 6. Start the Application
+
+After installing dependencies and configuring the required environment variables:
+
+```cmd
+npm run dev
+```
+
+Open your browser:
+
+http://localhost:3000
+
+The development server should serve the frontend and Express API.
+
+---
+
+## Environment Configuration
+
+The application uses environment variables for database connections, authentication, AI services, and email delivery.
+
+Configure these variables in your local `.env` file:
+
+| Variable | Purpose |
+|---|---|
+| `NODE_ENV` | Application environment |
+| `PORT` | Express server port |
+| `JWT_SECRET_KEY` | Secure authentication signing key |
+| `MYSQL_HOST` | MySQL server hostname |
+| `MYSQL_PORT` | MySQL server port |
+| `MYSQL_USER` | Database username |
+| `MYSQL_PASSWORD` | Database password |
+| `MYSQL_DATABASE` | Database name |
+| `GEMINI_API_KEY` | Google Gemini API key |
+| `SMTP_HOST` | Email provider SMTP host |
+| `SMTP_PORT` | SMTP port |
+| `SMTP_USER` | SMTP username |
+| `SMTP_PASS` | SMTP password or app password |
+| `MAIL_FROM` | Verified sender address |
+| `VITE_API_BASE_URL` | Frontend API base URL; leave empty for same-origin requests |
+| `FASTAPI_ATS_URL` | Optional private FastAPI service URL |
+| `FASTAPI_ATS_TOKEN` | Shared private service authentication token |
+
+### Generate a Secure JWT Secret
+
+Run this command locally:
+
+```cmd
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+Copy the generated value into your local `.env` as `JWT_SECRET_KEY`.
+
+### Gemini API Key
+
+Get your API key from:
+
+https://aistudio.google.com/apikey
+
+Store it only in the server-side `.env` file.
+
+### Email Configuration
+
+Configure your SMTP provider to enable email verification and password recovery.
+
+For Gmail, use an App Password where applicable. Never use your regular account password in application configuration.
+
+**Security note:** Never share real environment variable values in screenshots, public issues, source code, or GitHub commits.
+
+---
+
+## Optional: FastAPI ATS Service
+
+The project supports an optional private FastAPI service for selected ATS operations.
+
+When configured, Express forwards validated ATS requests to FastAPI. When the service is unavailable or not configured, the existing Express implementations remain available for supported operations.
+
+The ATS-only entrypoint is:
+
+```cmd
+app.ats_main:app
+```
+
+The separate database-backed FastAPI CRUD entrypoint is:
+
+```cmd
+app.main:app
+```
+
+These entrypoints have different responsibilities. Do not start the database-backed CRUD application against an unverified database schema.
+
+### Configure the ATS Service
+
+Set these variables in the root `.env`:
+
+```env
+FASTAPI_ATS_URL=http://127.0.0.1:8001
+FASTAPI_ATS_TOKEN=your_shared_random_token
+```
+
+Generate a secure token locally:
 
 ```cmd
 node -e "process.stdout.write(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
-### Run locally on Windows
+Configure the same token for the FastAPI service. Never expose it in frontend code or `VITE_*` variables.
 
-Configure `FASTAPI_ATS_URL` and the same `FASTAPI_ATS_TOKEN` in the ignored root `.env`, then open two CMD terminals:
+### Start FastAPI
 
-**Terminal 1 — FastAPI ATS service** (uses the existing backend virtual environment):
-
-```cmd
-cd /d C:\project\resume-fixer-pro\backend
-venv\Scripts\python.exe -m uvicorn app.ats_main:app --host 127.0.0.1 --port 8001
-```
-
-**Terminal 2 — Express and React/Vite website:**
+Open a second terminal:
 
 ```cmd
-cd /d C:\project\resume-fixer-pro
-npm.cmd run dev
+cd backend
 ```
 
-To run focused tests from the project root:
+Activate or use the project's existing Python virtual environment and install the dependencies listed in the backend requirements file.
+
+For an existing Windows virtual environment:
 
 ```cmd
-cd /d C:\project\resume-fixer-pro\backend
-venv\Scripts\python.exe -m pytest -q tests\test_ats_service.py
+venv\Scripts\activate
 ```
+
+Start the ATS service:
 
 ```cmd
-cd /d C:\project\resume-fixer-pro
-npm.cmd run test:express
+python -m uvicorn app.ats_main:app --host 127.0.0.1 --port 8001
 ```
 
-The FastAPI ATS routes currently integrated through Express are job matching (`/api/ai/match-job`) and uploaded-resume analysis (`/api/ats/analyze`). When the private service is enabled, uploaded-resume scoring and its recommendations are deterministic Python processing; the existing response field name `aiSuggestions` is retained for frontend compatibility, but those suggestions are not generated by Gemini. Gemini generation and the older Express-only `/api/ai/analyze-ats` route are not moved to Python. When the private service is disabled, the existing Express ATS analysis and job-match behavior remains available. The request boundary tests use a local mock FastAPI service; they do not prove a separate live FastAPI process is reachable until both local services are started with the shared token.
+Keep this terminal running.
 
-### Pending schema migration (not applied)
+### Start Express
 
-The read-only MySQL inspection of `resume_ats.resumes` confirmed that `template_id` and `accent_color` are absent. They are required by the existing database-backed FastAPI `Resume` model, but are not required by the stateless ATS service. No migration is needed for ATS integration. The existing additive migration files are `backend/migrations/001_add_resume_template_fields.up.sql` and `backend/migrations/001_add_resume_template_fields.down.sql`; neither was applied. Do not start `app.main:app` against that schema until the migration is reviewed and approved. A readable SQL backup file was found, but it was not restored or otherwise verified as a valid recovery backup.
-
-The local MySQL Community Server and `mysqldump` utility were both verified as version 8.4.9. The dump contains private database records, so keep it in the ignored `data_storage` directory and never commit or share it. Before creating a fresh backup from CMD, choose a unique filename and stop if it already exists:
+Open another terminal in the project root:
 
 ```cmd
-set "BACKUP=C:\project\resume-fixer-pro\data_storage\resume_ats_backup_%RANDOM%_%RANDOM%.sql"
-if not exist "%BACKUP%" (
-  "C:\Program Files\MySQL\MySQL Server 8.4\bin\mysqldump.exe" --host=127.0.0.1 --port=3306 --user=resume_app --password --single-transaction --quick --databases resume_ats --result-file="%BACKUP%"
-) else (
-  echo Backup file already exists; choose another name and do not run the dump command.
-)
-if exist "%BACKUP%" certutil -hashfile "%BACKUP%" SHA256
+npm run dev
 ```
 
-The `--password` option prompts without putting the password in the command line. Before running `mysqldump`, confirm that `BACKUP` does not already exist; do not run the dump command if it does. Verify the resulting file is non-empty and inspect only its `CREATE TABLE` statements, not `INSERT` data. A checksum and readable dump do not establish restore validity; only a successful restore into a separate disposable MySQL instance does. The existing `data_storage\resume_ats_backup.sql` contains only the `users` and `resumes` tables, has not been restore-tested, and omits the Express `app_users` and `app_resumes` tables, so it is not a complete recovery backup for the active website database.
+Both services should be running for requests that use the private FastAPI integration.
+
+---
+
+## Testing
+
+Run the tests from the appropriate project directories.
+
+### Express Tests
+
+From the project root:
+
+```cmd
+npm run test:express
+```
+
+### Python ATS Tests
+
+From the backend directory, activate the project's virtual environment and run:
+
+```cmd
+python -m pytest -q tests\test_ats_service.py
+```
+
+### TypeScript Check
+
+If the project defines the corresponding lint script:
+
+```cmd
+npm run lint
+```
+
+Run the tests after making code changes and before submitting a pull request.
+
+---
+
+## Production Build
+
+Create a production frontend build:
+
+```cmd
+npm run build
+```
+
+The generated frontend assets are placed in the build output directory configured by Vite.
+
+For production, use the application's production start script:
+
+```cmd
+npm start
+```
+
+Configure all required environment variables in the hosting provider's secure environment-variable settings.
+
+---
+
+## Deployment
+
+The application can be deployed using a Node.js hosting provider such as Render.
+
+### Render Web Service
+
+1. Create an account at https://render.com/.
+2. Select **New → Web Service**.
+3. Connect your GitHub account.
+4. Select the `Pasha141/progress-pilot` repository.
+5. Configure the service:
+
+| Setting | Value |
+|---|---|
+| Runtime | Node |
+| Build Command | `npm install && npm run build` |
+| Start Command | `npm start` |
+| Health Check Path | `/api/health` |
+
+6. Add the required environment variables in the Render Dashboard.
+7. Deploy the application.
+8. Verify the health endpoint and the deployed website.
+
+### Production Database
+
+Render Web Services do not automatically provide the MySQL database required by this project.
+
+Provision a compatible external MySQL 8 database with a secure connection. Configure its connection details in the hosting provider's environment settings.
+
+Do not use a local computer's `127.0.0.1` or `localhost` database address from a cloud-hosted application.
+
+### Optional FastAPI Deployment
+
+If you want to enable the private FastAPI ATS service in production:
+
+1. Deploy the ATS-only FastAPI application separately.
+2. Configure an HTTPS service URL.
+3. Set `FASTAPI_ATS_URL` in the Express service.
+4. Set the matching `FASTAPI_ATS_TOKEN` securely in both services.
+5. Test the integration after deployment.
+
+Do not expose the private FastAPI token to the browser.
+
+---
+
+## Security Considerations
+
+- Keep API keys and credentials out of Git.
+- Use strong, randomly generated authentication secrets.
+- Use HTTPS in production.
+- Keep database credentials private.
+- Do not expose private FastAPI credentials to frontend code.
+- Preserve authentication and authorization checks on protected routes.
+- Review environment variables before every deployment.
+- Do not run unreviewed database migrations on production data.
+
+---
+
+## Troubleshooting
+
+| Problem | What to check |
+|---|---|
+| `node` is not recognized | Install Node.js and verify PATH |
+| `npm install` fails | Check Node.js version and network connection |
+| Port 3000 is already in use | Stop the existing process or configure another supported port |
+| MySQL connection fails | Verify MySQL service, host, port, user, password, and database |
+| AI features are unavailable | Verify the server-side Gemini API key |
+| Email OTP is not received | Verify SMTP settings and sender configuration |
+| FastAPI ATS requests fail | Check FastAPI status, URL, token, and network access |
+| Production health check fails | Inspect hosting logs and `/api/health` response |
+
+---
+
+## Project Structure
+
+The following is a high-level overview. Exact file names and directories may vary as the project evolves.
+
+```text
+progress-pilot/
+│
+├── backend/             # Optional Python FastAPI ATS service
+├── src/                 # React frontend source
+├── public/              # Public assets
+├── tests/               # Application tests
+├── .env.example         # Environment variable template
+├── .gitignore           # Git exclusions
+├── package.json         # Node.js dependencies and scripts
+├── server.ts            # Express application entry point
+└── README.md            # Project documentation
+```
+
+---
+
+## Contributing
+
+Contributions, suggestions, and bug reports are welcome.
+
+1. Fork the repository.
+2. Create a feature branch.
+3. Make focused changes.
+4. Run the relevant tests.
+5. Submit a pull request describing your changes.
+
+Please do not include credentials, private user data, database dumps, or personal documents in pull requests.
+
+---
+
+## Author
+
+**Mohammed Junaid Pasha**
+
+Computer Science & Engineering Graduate | Full-Stack Project Developer
+
+GitHub: https://github.com/Pasha141
+
+Project Repository: https://github.com/Pasha141/progress-pilot
+
+---
+
+## License
+
+Check the repository for the applicable license before using, modifying, or redistributing this project.
+
+---
+
+**ATS Resume Builder by Junaid**
+
+*Build Smarter Resumes. Optimize for ATS. Move Your Career Forward.*
