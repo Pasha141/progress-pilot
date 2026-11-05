@@ -1,0 +1,51 @@
+node_modules/
+build/
+dist/
+coverage/
+.DS_Store
+*.log
+.env*
+!.env.example
+data_storage/
+recovery_backup/
+backend/venv/
+__pycache__/
+backend/.env
+!backend/.env.example
+# Google AI Studio temporary files
+.aistudio/artifacts/brain/*/.tempmediaStorage/
+
+# Personal resume and private media
+public/assets/aistudio/Resume_Mohammed_Junaid_Pasha_*.html
+public/assets/aistudio/WhatsApp_Image_*
+
+# Downloaded project ZIP backups
+public/assets/aistudio/*.zip
+
+# Personal resume data
+src/data/ownerResume.ts
+
+# Local backup files - do not publish
+src/components/Footer.backup.tsx
+src/utils/printHelper.backup.txt
+
+# Google AI Studio reference screenshots - keep local only
+public/assets/aistudio/*.png
+
+# Allow developer photo used in the footer
+
+# All local backups
+*.bak
+*.before-*.ts
+*.backup_*
+
+# Temporary accidental CMD artifacts
+enied
+netstat
+npx
+r.id
+r.id).join(, )
+{
+!public/assets/aistudio/WhatsApp_Image_2026-10-21_at_9.47.52_PM_c6afd6a3.jpeg
+public/assets/aistudio/WhatsApp_Image_2026-10-21_at_9.47.52_PM_c6afd6a3.jpeg
+public/assets/aistudio/WhatsApp_Image_2026-10-21_at_9.47.52_PM_c6afd6a3.jpeg

@@ -1,0 +1,395 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-cocoa-900: #291C0E;
+  --color-cocoa-700: #6E473B;
+  --color-taupe-500: #A78D78;
+  --color-stone-400: #BEB5A9;
+  --color-sand-200: #E1D4C2;
+  --color-cream-100: #F4E6D2;
+
+  --color-accent: #C98B5E;
+  --color-accent-hover: #B5774A;
+  --color-accent-text: #06141B;
+
+  --color-ink-950: #040d12;
+  --color-ink-900: #06141B;
+  --color-ink-800: #11212D;
+  --color-ink-700: #253745;
+  --color-mist-100: #F1F5F9;
+  --color-mist-200: #E2E8F0;
+  --color-mist-400: #94A3B8;
+
+  --color-status-success: #4D8B6A;
+  --color-status-warning: #D9A441;
+  --color-status-danger: #B5483A;
+
+  --color-surface: #FBF5EC;
+  --color-paper: #FFFFFF;
+
+  --font-serif: "Fraunces", "Playfair Display", Georgia, serif;
+  --font-sans: "Inter", "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+}
+
+:root {
+  --cocoa-900: #291C0E;
+  --cocoa-700: #6E473B;
+  --taupe-500: #A78D78;
+  --stone-400: #BEB5A9;
+  --sand-200: #E1D4C2;
+  --cream-100: #F4E6D2;
+
+  --accent: #C98B5E;
+  --accent-hover: #B5774A;
+
+  --success: #4D8B6A;
+  --warning: #D9A441;
+  --danger: #B5483A;
+
+  --surface: #FBF5EC;
+  --card-surface: #F4E6D2;
+  --elevated-surface: #FFFFFF;
+  --paper: #FFFFFF;
+
+  --text-primary: var(--cocoa-900);
+  --text-secondary: var(--cocoa-700);
+  --border-default: var(--sand-200);
+
+  --radius-card: 1.5rem;
+  --transition-ui: 180ms ease;
+}
+
+/* Dark Mode Variables & Cohesive Palette (#1E1612 deep brown, #2A1F1A cards, #F5EBE0 cream, #DF9F70 caramel) */
+html.dark,
+body.dark-mode {
+  color-scheme: dark;
+  --surface: #1E1612;
+  --card-surface: #2A1F1A;
+  --elevated-surface: #33261F;
+  --accent: #DF9F70;
+  --accent-hover: #CE8D5D;
+  --text-primary: #F5EBE0;
+  --text-secondary: #D2BFA9;
+  --border-default: #433229;
+}
+
+@layer base {
+  body {
+    background-color: var(--surface);
+    color: var(--text-primary);
+    font-family: 'Inter', 'Plus Jakarta Sans', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, .font-serif-title {
+    font-family: 'Fraunces', 'Playfair Display', Georgia, serif;
+  }
+}
+
+/* Scoped Dark Mode Overrides for Cream/Cocoa App Surfaces (preserves pure-white A4 resume paper) */
+html.dark :where(:not(#printable-resume):not(#printable-resume *):not(#printable-cover-letter):not(#printable-cover-letter *):not([data-resume-paper]):not([data-resume-paper] *)) {
+  &.bg-\[\#FBF5EC\] {
+    background-color: #1E1612;
+  }
+  &.bg-\[\#FBF5EC\]\/90,
+  &.bg-\[\#FBF5EC\]\/95 {
+    background-color: rgba(30, 22, 18, 0.94);
+  }
+  &.bg-\[\#F4E6D2\],
+  &.bg-\[\#F4E6D2\]\/60,
+  &.bg-\[\#F4E6D2\]\/50 {
+    background-color: #2A1F1A;
+  }
+  &.bg-\[\#E1D4C2\] {
+    background-color: #352720;
+  }
+  &.text-\[\#291C0E\]:not(.bg-\[\#C98B5E\]):not(.bg-\[\#DF9F70\]):not([class*="bg-[#C98B5E]"]) {
+    color: #F5EBE0;
+  }
+  &.text-\[\#6E473B\] {
+    color: #D2BFA9;
+  }
+  &.text-\[\#A78D78\] {
+    color: #B9A18B;
+  }
+  &.border-\[\#E1D4C2\],
+  &.border-\[\#BEB5A9\] {
+    border-color: #433229;
+  }
+}
+
+html.dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+html.dark textarea,
+html.dark select {
+  background-color: #2C201A;
+  color: #F5EBE0;
+  border-color: #4A372D;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: #8E7968;
+}
+
+/* Custom Scrollbars in Warm Taupe / Sand */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--stone-400);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--taupe-500);
+}
+
+/* Production-Grade Print Styles: Guaranteed Single-Page A4 Output */
+.resume-print-sheet {
+  overflow-wrap: anywhere;
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 8mm 10mm;
+  }
+
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    color: #0f172a !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  /* Hide app navigation, builder controls, modals, and non-printable UI */
+  .no-print,
+  nav,
+  header,
+  aside,
+  button,
+  .preview-toolbar,
+  .sample-badge,
+  .overflow-tip {
+    display: none !important;
+  }
+
+  /* Ensure resume and cover letter printable viewports occupy full printable area */
+  main {
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: block !important;
+    overflow: visible !important;
+  }
+
+  div[class*="lg:col-span-7"] {
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+
+  #printable-resume-viewport,
+  #printable-cover-letter-viewport {
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    background: transparent !important;
+    width: 100% !important;
+    height: auto !important;
+  }
+
+  #printable-resume-scalebox,
+  #printable-cover-letter-scalebox {
+    margin: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    transform: none !important;
+  }
+
+  #printable-resume,
+  #printable-cover-letter {
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    width: 100% !important;
+    min-height: 0 !important;
+    height: auto !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    transform: none !important;
+    page-break-after: avoid !important;
+    page-break-inside: avoid !important;
+    background: #ffffff !important;
+    color: #1e293b !important;
+  }
+
+  #printable-resume[data-margin="narrow"] {
+    padding: 2mm 3mm !important;
+  }
+  #printable-resume[data-margin="default"] {
+    padding: 6mm 8mm !important;
+  }
+  #printable-resume[data-margin="wide"] {
+    padding: 14mm 16mm !important;
+  }
+
+  /* Prevent page breaks inside critical sections */
+  section,
+  .resume-section,
+  .experience-item,
+  .project-item,
+  .education-item {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+}
+
+.template-presentation[data-presentation-style='editorial'] header {
+  text-align: center;
+}
+
+.template-presentation[data-presentation-style='editorial'] header > div {
+  justify-content: center;
+}
+
+.template-presentation[data-presentation-style='editorial'] section h2 {
+  font-family: Georgia, 'Times New Roman', serif;
+  letter-spacing: 0.06em;
+}
+
+.template-presentation[data-presentation-style='editorial'] > div {
+  font-family: Georgia, 'Times New Roman', serif;
+}
+
+.template-presentation[data-presentation-style='timeline'] section > div {
+  border-left: 2px solid #cbd5e1;
+  margin-left: 2px;
+  padding-left: 10px;
+}
+
+.template-presentation[data-presentation-style='timeline'] section h2 {
+  border-left: 3px solid currentColor;
+  padding-left: 6px;
+}
+
+.template-presentation[data-presentation-style='timeline'] > div {
+  border-left: 2px solid #cbd5e1;
+  padding-left: 4px;
+}
+
+.template-presentation[data-presentation-style='compact'] section {
+  margin-top: 0.55rem !important;
+}
+
+.template-presentation[data-presentation-style='compact'] section > div {
+  gap: 0.4rem !important;
+}
+
+.template-presentation[data-presentation-style='compact'] > div {
+  letter-spacing: -0.015em;
+}
+
+.template-presentation[data-presentation-style='framed'] section h2 {
+  border: 1px solid #e2e8f0;
+  border-left: 3px solid currentColor;
+  border-radius: 2px;
+  padding: 3px 6px;
+}
+
+.template-presentation[data-presentation-style='framed'] > div {
+  outline: 1px solid #e2e8f0;
+  outline-offset: -4px;
+}
+
+.template-presentation[data-presentation-style='modern-grid'] header > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 0.75rem;
+}
+
+.template-presentation[data-presentation-style='modern-grid'] header > div > :last-child {
+  text-align: right;
+}
+
+.template-presentation[data-presentation-style='modern-grid'] > div {
+  border-top: 2px solid #2563eb;
+}
+
+.template-presentation[data-presentation-style='letterhead'] header {
+  border-bottom: 3px double #cbd5e1;
+  padding-bottom: 0.75rem;
+}
+
+.template-presentation[data-presentation-style='letterhead'] header h1 {
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+}
+
+.template-presentation[data-presentation-style='letterhead'] > div > div:first-child {
+  border-bottom: 3px double #cbd5e1;
+  padding-bottom: 4px;
+}
+
+/* ATS Resume Print — A4 page setup */
+@page {
+  size: A4;
+  margin: 12mm;
+}
+
+@media print {
+  html,
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  nav,
+  header,
+  footer,
+  .no-print,
+  [data-no-print="true"] {
+    display: none !important;
+  }
+
+  .resume-preview,
+  [data-resume-preview="true"] {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    overflow: visible !important;
+  }
+
+  .resume-preview *,
+  [data-resume-preview="true"] * {
+    break-inside: avoid;
+  }
+
+  a {
+    color: #000000 !important;
+    text-decoration: none !important;
+  }
+}

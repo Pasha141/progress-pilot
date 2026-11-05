@@ -1,0 +1,6 @@
+{
+  "name": "ATS-Friendly Resume Builder by Junaid",
+  "description": "ATS-Friendly Resume Builder by Junaid with 40+ curated templates, live preview, and instant PDF/DOCX export.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

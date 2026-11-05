@@ -1,0 +1,3 @@
+ALTER TABLE resumes
+    ADD COLUMN template_id VARCHAR(64) NOT NULL DEFAULT 'tmpl-1',
+    ADD COLUMN accent_color VARCHAR(32) NOT NULL DEFAULT '#C98B5E';
